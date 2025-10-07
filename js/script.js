@@ -1,8 +1,9 @@
 // --- CORE CONFIGURATION ---
 const API_URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
-const API_KEY = ""; 
+const API_KEY = ""; // !!! IMPORTANT: YOU MUST ADD YOUR API KEY HERE !!!
 
 // !!! CRITICAL: GOOGLE SHEETS URL
+// Replace 'YOUR_SHEET_ID' with your actual Google Sheet ID
 const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv&sheet=Sheet1'; 
 
 const SP_COLORS = {
@@ -116,24 +117,19 @@ async function fetchLiveProducts() {
 }
 
 async function recommend_snacks({ budgetAmount: budgetAmountInput, budgetType, headcount, snack_type_selection, selected_filters }) {
-    // This function's logic is complex and has been updated based on the new chatbot component.
-    // A summary of the logic is provided here.
     const liveProducts = await fetchLiveProducts();
     if (!liveProducts || liveProducts.length === 0) return "CRITICAL ERROR: Failed to retrieve products.";
     
-    // 1. Calculate effective budget
     const headcountInt = parseInt(headcount);
     const budgetAmount = parseFloat(budgetAmountInput);
     let effectiveTotalBudget = budgetType === 'per_head' ? budgetAmount * headcountInt : budgetAmount;
 
-    // 2. Filter by category
     const snackTypes = snack_type_selection.map(s => s.toLowerCase().replace(/[\s-]/g, '_'));
     const filteredByCategory = liveProducts.filter(p => {
         const productCategoryKey = p.category.toLowerCase().replace(/[\s-]/g, '_');
         return snackTypes.some(st => productCategoryKey.includes(st));
     });
 
-    // 3. Filter by dietary needs and allergens
     const finalFiltered = filteredByCategory.filter(product => {
         for (const filter of selected_filters) {
             const lowerFilter = filter.toLowerCase();
@@ -143,7 +139,7 @@ async function recommend_snacks({ budgetAmount: budgetAmountInput, budgetType, h
                     return false;
                 }
                 const dietaryKey = lowerFilter.replace(/-/g, '_');
-                if (product.dietary[dietaryKey] === false) { // Assuming sheet has dairy_free etc.
+                if (product.dietary[dietaryKey] === false) { 
                     return false;
                 }
             } else {
@@ -158,11 +154,10 @@ async function recommend_snacks({ budgetAmount: budgetAmountInput, budgetType, h
     
     if (finalFiltered.length === 0) return "No suitable products found after applying your filters.";
 
-    // 4. Build recommendation list based on budget
     let remainingBudget = effectiveTotalBudget;
     const finalRecommendations = [];
     let totalCost = 0;
-    finalFiltered.sort((a,b) => a.price - b.price); // Prioritize cheaper items
+    finalFiltered.sort((a,b) => a.price - b.price);
 
     for (const snack of finalFiltered) {
         if(remainingBudget < snack.price) continue;
@@ -170,7 +165,7 @@ async function recommend_snacks({ budgetAmount: budgetAmountInput, budgetType, h
         quantity = Math.max(quantity, snack.min_order);
         
         if (snack.price * quantity <= remainingBudget) {
-            finalRecommendations.push({ ...snack, quantity });
+            finalRecommendations.push({ ...snack, quantity, total_item_cost: snack.price * quantity });
             remainingBudget -= snack.price * quantity;
             totalCost += snack.price * quantity;
         }
@@ -222,7 +217,6 @@ async function handleApiCall(currentContents) {
         }
     }
 }
-
 
 async function handleRecommendationRun(initialHistory) {
     updateState('isLoading', true);
@@ -291,91 +285,165 @@ async function handleSendMessage(userMessage) {
     }
 }
 
+function handleHumanContactPrompt() {
+    const { name, email, headcount, budgetAmount, budgetType, budgetFrequency, selectedSnackTypes, dietaryFilters } = userData;
+    const budgetPresentation = budgetType === 'per_head' ? `$${budgetAmount} per head` : `$${budgetAmount} total`;
+    const emailBody = `G'day Snack Proud Team,\n\nI just received a personalised recommendation from your AI Snack Agent...\n\nDetails:\n- Name: ${name}\n- Email: ${email}\n- Head Count: ${headcount}\n- Budget: ${budgetPresentation} / ${budgetFrequency}\n- Categories: ${selectedSnackTypes.join(', ')}\n- Filters: ${dietaryFilters.join(', ') || 'None'}\n\nCheers!`;
+    const emailLink = `mailto:orders@snackproud.com.au?subject=Snack Agent Follow-up for ${name}&body=${encodeURIComponent(emailBody)}`;
+    window.open(emailLink, '_blank');
+}
+
 
 // --- UI RENDERING & EVENT HANDLERS ---
-// All UI rendering and event handler functions from the previous combined script are placed here.
-// This includes renderChatbotAgent, attachEventListeners, handleFormSubmit, etc.
-// The code is identical to the previous version, just consolidated here.
-// For brevity, only the main render function structure is shown.
+function renderRecommendationCard(recommendation) {
+    return `
+        <div class="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden p-4 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 transition duration-300 hover:shadow-lg">
+            <img src="${recommendation.image_url}" alt="${recommendation.name}" class="w-full sm:w-20 h-20 object-cover rounded-lg flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/A9A9A9/ffffff?text=Snack'">
+            <div class="flex-grow">
+                <h3 class="text-lg font-bold" style="color: ${SP_COLORS.darkGreen};">${recommendation.name}</h3>
+                <p class="text-sm text-gray-600">Unit Price: <strong class="text-gray-700">A$${recommendation.price.toFixed(2)}</strong></p>
+                <p class="text-sm font-semibold mt-1" style="color: ${SP_COLORS.teal};">Quantity: <strong class="text-gray-900">${recommendation.quantity}</strong> | Total: <strong class="text-gray-900">A$${(recommendation.price * recommendation.quantity).toFixed(2)}</strong></p>
+            </div>
+            <a href="${recommendation.product_url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg" style="background-color: ${SP_COLORS.yellow}; color: ${SP_COLORS.darkGreen};">View Product</a>
+        </div>`;
+}
+
+function renderMessage(msg) {
+    const roleClass = msg.role === 'user' ? 'justify-end' : 'justify-start';
+    const bubbleStyle = `background-color: ${msg.role === 'user' ? SP_COLORS.teal : '#FFFFFF'}; color: ${msg.role === 'user' ? 'white' : SP_COLORS.textDark};`;
+    const sender = msg.role === 'user' ? (userId ? `You (${userId.substring(0, 8)}...)` : 'You') : 'Snack Agent';
+    const content = msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    return `<div class="flex ${roleClass} mb-4"><div class="max-w-[85%] p-3 rounded-xl shadow-md" style="${bubbleStyle}"><p class="font-semibold text-xs mb-1 opacity-70">${sender}</p><div>${content}</div></div></div>`;
+}
+
+function renderCollapsibleCheckboxGroup(title, options, selected, type) {
+    const listItems = options.map(item => `
+        <div class="flex items-center">
+            <input type="checkbox" id="check-${item.replace(/\s/g, '-')}-${type}" data-item="${item}" ${selected.includes(item) ? 'checked' : ''} class="h-4 w-4 rounded focus:ring-2" style="color: ${SP_COLORS.teal}; accent-color: ${SP_COLORS.teal};">
+            <label for="check-${item.replace(/\s/g, '-')}-${type}" class="ml-2 block text-sm">${item}</label>
+        </div>`).join('');
+    return `
+        <div class="mb-6 border rounded-lg shadow-sm">
+            <button type="button" class="toggle-group w-full flex justify-between items-center p-3 font-semibold text-left rounded-t-lg" style="background-color: ${SP_COLORS.lightCream};" data-type="${type}">
+                <span>${title} (${selected.length} selected)</span>
+                <svg id="chevron-${type}" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="group-body-${type}" class="p-4 bg-white border-t hidden">
+                <div class="flex justify-end mb-3">
+                    <button type="button" class="toggle-all text-xs font-semibold px-2 py-1 rounded" style="color: ${SP_COLORS.teal}; background-color: ${SP_COLORS.lightCream};" data-type="${type}">${selected.length === options.length ? 'Deselect All' : 'Select All'}</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 checkbox-group" data-type="${type}">${listItems}</div>
+            </div>
+        </div>`;
+}
+
 function renderChatbotAgent() {
     const container = document.getElementById('snack-agent-container');
     if (!container) return;
 
     let contentHTML;
     if (!isFormSubmitted) {
-        // ... HTML for the pre-chat form ...
-         contentHTML = `...`; // Placeholder for the large HTML string
-    } else {
-        // ... HTML for the chat view ...
-        contentHTML = `...`; // Placeholder for the large HTML string
-    }
-
-    // A simplified representation of the complex render logic
-    if (!isFormSubmitted) {
         contentHTML = `
             <div class="bg-white rounded-2xl shadow-2xl p-8">
                 <h2 class="text-2xl font-bold text-center mb-6" style="color:${SP_COLORS.darkGreen};">Snack Plan Creator</h2>
                 <form id="pre-chat-form">
-                    <!-- Name -->
                     <div class="mb-4"><label class="block text-sm font-semibold mb-1">Your Name *</label><input type="text" name="name" value="${userData.name}" required class="w-full p-3 border rounded-lg"></div>
-                    <!-- Email -->
                     <div class="mb-4"><label class="block text-sm font-semibold mb-1">Email *</label><input type="email" name="email" value="${userData.email}" required class="w-full p-3 border rounded-lg"></div>
-                    <!-- Budget & Type -->
                     <div class="grid grid-cols-5 gap-3 mb-4 items-end">
-                        <div class="col-span-3"><label class="block text-sm font-semibold mb-1">Budget (AUD) *</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span>$</span></div><input type="number" name="budgetAmount" value="${userData.budgetAmount}" required min="0" step="0.01" class="w-full pl-7 p-3 border rounded-lg"></div></div>
-                        <div class="col-span-2"><label class="block text-sm font-semibold mb-1">Calculation *</label><select name="budgetType" class="w-full p-3 border rounded-lg"><option value="total">Total</option><option value="per_head">Per Head</option></select></div>
+                        <div class="col-span-3"><label class="block text-sm font-semibold mb-1">Budget (AUD) *</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center"><span>$</span></div><input type="number" name="budgetAmount" value="${userData.budgetAmount}" required min="0" step="0.01" class="w-full pl-7 p-3 border rounded-lg"></div></div>
+                        <div class="col-span-2"><label class="block text-sm font-semibold mb-1">Calculation *</label><select name="budgetType" class="w-full p-3 border rounded-lg"><option value="total" ${userData.budgetType === 'total' ? 'selected' : ''}>Total</option><option value="per_head" ${userData.budgetType === 'per_head' ? 'selected' : ''}>Per Head</option></select></div>
                     </div>
-                     <!-- Frequency & Headcount -->
                     <div class="grid grid-cols-5 gap-3 mb-4 items-end">
-                         <div class="col-span-3"><label class="block text-sm font-semibold mb-1">Frequency</label><select name="budgetFrequency" class="w-full p-3 border rounded-lg"><option value="week">Weekly</option><option value="fortnight">Fortnightly</option><option value="month">Monthly</option></select></div>
+                        <div class="col-span-3"><label class="block text-sm font-semibold mb-1">Frequency</label><select name="budgetFrequency" class="w-full p-3 border rounded-lg"><option value="week" ${userData.budgetFrequency === 'week' ? 'selected' : ''}>Weekly</option><option value="fortnight" ${userData.budgetFrequency === 'fortnight' ? 'selected' : ''}>Fortnightly</option><option value="month" ${userData.budgetFrequency === 'month' ? 'selected' : ''}>Monthly</option></select></div>
                         <div class="col-span-2"><label class="block text-sm font-semibold mb-1">Head Count *</label><input type="number" name="headcount" value="${userData.headcount}" required min="1" class="w-full p-3 border rounded-lg"></div>
                     </div>
-
                     ${renderCollapsibleCheckboxGroup("Snack Categories", SNACK_TYPE_OPTIONS, userData.selectedSnackTypes, 'snack')}
                     ${renderCollapsibleCheckboxGroup("Dietary Needs", FILTER_OPTIONS, userData.dietaryFilters, 'filter')}
-                    
-                    <button type="submit" class="w-full py-3 rounded-lg font-bold mt-4" style="background-color:${SP_COLORS.yellow}; color:${SP_COLORS.darkGreen};">Start Chat</button>
+                    <button type="submit" class="w-full py-3 rounded-lg font-bold mt-4" style="background-color:${SP_COLORS.yellow}; color:${SP_COLORS.darkGreen};">${isLoading ? 'Processing...' : 'Start Personalised Chat'}</button>
                 </form>
             </div>`;
     } else {
         contentHTML = `
             <div class="bg-white rounded-2xl shadow-2xl min-h-[700px] flex flex-col">
-                <div class="p-3 border-b flex justify-between items-center"><h1 class="font-bold">Snack Agent for ${userData.name}</h1><button id="reset-chat-btn" class="text-sm p-2">Reset</button></div>
-                <div id="chat-body" class="flex-grow p-4 overflow-y-auto" style="max-height:560px">${chatHistory.map(renderMessage).join('')}${lastRecommendationsData ? `<div class="mt-4">${lastRecommendationsData.map(renderRecommendationCard).join('')}</div>` : ''}${isContactPrompted ? `<div class="text-center mt-4"><button id="human-contact-btn" class="p-2 rounded-lg" style="background-color:${SP_COLORS.yellow}">Contact Human Team</button></div>` : ''}</div>
+                <div class="p-3 border-b flex justify-between items-center"><h1 class="font-bold text-lg" style="color:${SP_COLORS.darkGreen};">Snack Agent for ${userData.name}</h1><button id="reset-chat-btn" class="text-sm px-3 py-1.5 rounded-full font-semibold" style="color:${SP_COLORS.teal}; border: 1px solid ${SP_COLORS.teal};">Reset</button></div>
+                <div id="chat-body" class="flex-grow p-4 overflow-y-auto" style="max-height:560px">
+                    ${chatHistory.map(renderMessage).join('')}
+                    ${lastRecommendationsData ? `<div class="mt-4 space-y-3">${lastRecommendationsData.map(renderRecommendationCard).join('')}</div>` : ''}
+                    ${isContactPrompted ? `<div class="text-center mt-4"><button id="human-contact-btn" class="px-6 py-2 rounded-full text-sm font-bold" style="background-color:${SP_COLORS.yellow}; color:${SP_COLORS.darkGreen};">Contact Human Team</button></div>` : ''}
+                    ${isLoading ? `<div class="flex justify-start"><div class="p-3">...</div></div>` : ''}
+                </div>
                 <div class="p-4 border-t flex gap-3">
-                    <input type="text" id="chat-input" class="flex-grow p-3 border rounded-lg" placeholder="Ask a follow-up...">
-                    <button id="send-message-btn" class="px-4 py-3 rounded-lg text-white" style="background-color:${SP_COLORS.teal};">Send</button>
+                    <input type="text" id="chat-input" class="flex-grow p-3 border rounded-lg" placeholder="Ask a follow-up..." ${isLoading ? 'disabled' : ''}>
+                    <button id="send-message-btn" class="px-4 py-3 rounded-lg text-white font-semibold" style="background-color:${SP_COLORS.teal};" ${isLoading ? 'disabled' : ''}>Send</button>
                 </div>
             </div>`;
     }
-
     container.innerHTML = contentHTML;
     attachEventListeners();
 }
 
+function handleFormSubmit() {
+    const form = document.getElementById('pre-chat-form');
+    userData.name = form.elements['name'].value;
+    userData.email = form.elements['email'].value;
+    userData.budgetAmount = form.elements['budgetAmount'].value;
+    userData.budgetType = form.elements['budgetType'].value;
+    userData.budgetFrequency = form.elements['budgetFrequency'].value;
+    userData.headcount = form.elements['headcount'].value;
+    
+    if (!userData.name || !userData.email || !userData.budgetAmount || !userData.headcount) {
+        return alert("Please fill out all required fields.");
+    }
+    updateState('isFormSubmitted', true);
+    const initialGreeting = { role: 'model', text: `G'day, ${userData.name}! **Generating recommendations...**` };
+    updateState('chatHistory', [initialGreeting]);
+    handleRecommendationRun([initialGreeting]);
+}
+
+function handleCheckboxChange(item, type) {
+    const key = type === 'snack' ? 'selectedSnackTypes' : 'dietaryFilters';
+    let current = userData[key];
+    if (current.includes(item)) {
+        userData[key] = current.filter(i => i !== item);
+    } else {
+        userData[key].push(item);
+    }
+    renderChatbotAgent();
+}
+
+function handleToggleAll(type) {
+    const key = type === 'snack' ? 'selectedSnackTypes' : 'dietaryFilters';
+    const options = type === 'snack' ? SNACK_TYPE_OPTIONS : FILTER_OPTIONS;
+    if (userData[key].length === options.length) {
+        userData[key] = [];
+    } else {
+        userData[key] = [...options];
+    }
+    renderChatbotAgent();
+}
+
+function toggleCollapsibleGroup(type) {
+    const body = document.getElementById(`group-body-${type}`);
+    const chevron = document.getElementById(`chevron-${type}`);
+    body.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-180');
+}
+
 function attachEventListeners() {
     const form = document.getElementById('pre-chat-form');
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Manually collect data on submit
-            userData.name = form.elements['name'].value;
-            userData.email = form.elements['email'].value;
-            userData.budgetAmount = form.elements['budgetAmount'].value;
-            userData.budgetType = form.elements['budgetType'].value;
-            userData.budgetFrequency = form.elements['budgetFrequency'].value;
-            userData.headcount = form.elements['headcount'].value;
-            handleFormSubmit();
-        });
-    }
+    if (form) form.addEventListener('submit', handleFormSubmit);
+
+    document.querySelectorAll('.toggle-group').forEach(b => b.addEventListener('click', () => toggleCollapsibleGroup(b.dataset.type)));
+    document.querySelectorAll('.toggle-all').forEach(b => b.addEventListener('click', () => handleToggleAll(b.dataset.type)));
+    document.querySelectorAll('.checkbox-group').forEach(g => g.addEventListener('change', e => {
+        if (e.target.type === 'checkbox') handleCheckboxChange(e.target.dataset.item, g.dataset.type);
+    }));
 
     const sendBtn = document.getElementById('send-message-btn');
     if (sendBtn) {
         const chatInput = document.getElementById('chat-input');
         sendBtn.addEventListener('click', () => handleSendMessage(chatInput.value));
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleSendMessage(chatInput.value);
-        });
+        chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSendMessage(chatInput.value); });
     }
     
     const resetBtn = document.getElementById('reset-chat-btn');
@@ -385,12 +453,33 @@ function attachEventListeners() {
     if(humanBtn) humanBtn.addEventListener('click', handleHumanContactPrompt);
 }
 
-// And so on for all other handlers...
-
 // --- INITIALIZATION ---
-document.getElementById('current-year').textContent = new Date().getFullYear();
-window.onload = () => {
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('current-year').textContent = new Date().getFullYear();
     renderChatbotAgent();
-    // Firebase auth logic...
-};
+    
+    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken } = window.firebase || {};
+    if (!initializeApp) return console.warn("Firebase not available.");
+    
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    if (Object.keys(firebaseConfig).length > 0) {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const authenticate = async () => {
+            try {
+                const cred = initialAuthToken ? await signInWithCustomToken(auth, initialAuthToken) : await signInAnonymously(auth);
+                userId = cred.user.uid;
+                console.log(`Authenticated as: ${userId}`);
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+                userId = 'fallback-' + Math.random().toString(36).substring(2);
+            }
+        };
+        authenticate();
+    } else {
+        userId = 'fallback-' + Math.random().toString(36).substring(2);
+    }
+});
 
