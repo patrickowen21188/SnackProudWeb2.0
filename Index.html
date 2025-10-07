@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Snack Proud offers premium healthy snacks for corporate offices and a comprehensive pantry program. Keep your staff happy and energized with our curated snack solutions, a cost-effective alternative to daily lunches.">
+    <meta name="keywords" content="healthy snacks, corporate snacks, pantry program, office snacks, employee wellbeing, healthy gifting, staff happiness">
+    <title>Snack Proud | Healthy Corporate Snacks & Pantry Programs</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Icon Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        window.firebase = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken
+        };
+    </script>
+</head>
+
+<body>
+<div id="page" class="site">
+    <header id="masthead" class="site-header">
+        <!-- Top bar with secondary links -->
+        <div class="header-top-bar">
+            <div class="container">
+                <a href="https://snackproud.dearportal.com/" target="_blank" rel="noopener noreferrer" class="header-login-link"><i class="fas fa-user-tie"></i> Trade Portal</a>
+                <a href="https://shop.snackproud.com.au/" target="_blank" rel="noopener noreferrer"><i class="fas fa-shopping-cart"></i> Shop Online</a>
+                <a href="#contact" class="sp-button sp-button-primary">Get a Quote</a>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="container">
+                <!-- Site Logo -->
+                <a href="#" class="custom-logo-link" rel="home">
+                    <img src="images/ui/sp_logo.png" alt="Snack Proud Logo" onerror="this.onerror=null;this.src='https://placehold.co/200x60/3d6b5e/ffffff?text=Snack+Proud';">
+                </a>
+                <!-- Main Site Navigation -->
+                <nav id="site-navigation" class="main-navigation">
+                    <ul>
+                        <!-- Our Stories Dropdown -->
+                        <li class="menu-item-has-children">
+                            <a href="#">Our Stories</a>
+                            <ul class="sub-menu">
+                                <li><a href="#">About us</a></li>
+                                <li><a href="#">Healthy Snacks</a></li>
+                                <li><a href="#">Curated Snacks</a></li>
+                                <li><a href="#">Inclusivity</a></li>
+                                <li><a href="#">Sustainability</a></li>
+                                <li><a href="#">Indigenous snacks</a></li>
+                            </ul>
+                        </li>
+                        <!-- Our Solutions Dropdown -->
+                         <li class="menu-item-has-children">
+                            <a href="#">Our Solutions</a>
+                            <ul class="sub-menu">
+                                <li><a href="#">Pantry Program</a></li>
+                                <li><a href="#">Office Snacks</a></li>
+                                <li><a href="#">Healthy Gifting</a></li>
+                            </ul>
+                        </li>
+                        <!-- How It Works Link -->
+                        <li><a href="#">How it works</a></li>
+                        <!-- Case Studies Dropdown -->
+                         <li class="menu-item-has-children">
+                            <a href="#">Case Studies</a>
+                            <ul class="sub-menu">
+                                <li><a href="#">Small Business & Startups</a></li>
+                                <li><a href="#">Finance & Tech</a></li>
+                                <li><a href="#">Commercial & concierge</a></li>
+                                <li><a href="#">Co Working Spaces</a></li>
+                                <li><a href="#">Hotels & Accommodation</a></li>
+                                <li><a href="#">Meetings & Event Solutions</a></li>
+                                <li><a href="#">School & Education</a></li>
+                                <li><a href="#">Wholesale & Trade</a></li>
+                            </ul>
+                        </li>
+                        <!-- Blog Link -->
+                        <li><a href="#">Blog</a></li>
+                        <!-- Contact Us Link -->
+                        <li><a href="#contact">Contact us</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main id="primary" class="site-main">
+        <!-- CTA Divider -->
+        <section class="cta-divider-section">
+            <div class="container">
+                <div class="cta-wrapper">
+                    <div class="cta-text">
+                        <h3 class="heading">Have a Quick Question?</h3>
+                        <p class="subheading">Send us a message and we'll get back to you shortly.</p>
+                        <div class="mt-4 text-md space-y-1">
+                            <p><strong>Call Us:</strong> <a href="tel:1300445666" class="hover:underline" style="color: var(--sp-text-dark);">1300 445 666</a></p>
+                            <p><strong>Email:</strong> <a href="mailto:orders@snackproud.com.au" class="hover:underline" style="color: var(--sp-text-dark);">orders@snackproud.com.au</a></p>
+                        </div>
+                    </div>
+                    <form class="cta-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cta-name">Your Name</label>
+                                <input type="text" id="cta-name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cta-email">Your Email</label>
+                                <input type="email" id="cta-email" name="email" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                             <label for="cta-message">Your Message</label>
+                             <textarea id="cta-message" name="message" required></textarea>
+                        </div>
+                        <div class="submit-button-container">
+                            <button type="submit" class="sp-button sp-button-primary">Send <i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section bg-gray-100">
+            <div class="container">
+                <div class="grid md:grid-cols-2 gap-12 items-start">
+                    <!-- Column 1: Text Content -->
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-bold" style="color: var(--sp-dark-green);">Ready to write your team's success story?</h2>
+                        <p class="text-lg text-gray-600 mt-4">A better workplace culture is just a snack away. Let's chat about your team, your goals, and how we can create the perfect snack program for you.</p>
+                        <div class="mt-8 text-lg space-y-2">
+                            <p><strong>Call Us:</strong> <a href="tel:1300445666" class="hover:underline" style="color: var(--sp-text-dark);">1300 445 666</a></p>
+                            <p><strong>Email:</strong> <a href="mailto:orders@snackproud.com.au" class="hover:underline" style="color: var(--sp-text-dark);">orders@snackproud.com.au</a></p>
+                        </div>
+                        <div class="mt-8">
+                           <h3 class="text-2xl font-bold" style="color: var(--sp-dark-green);">Or get a personalised recommendation</h3>
+                           <p class="text-md text-gray-600 mt-1">Fill in your details in our AI Snack Plan Creator Agent and create a custom snack plan for your office in seconds.</p>
+                       </div>
+                    </div>
+
+                    <!-- Column 2: Chatbot -->
+                    <div>
+                        <div id="snack-agent-container" class="w-full">
+                            <!-- Chatbot content will be injected here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="colophon" class="site-footer">
+        <div class="container">
+            <!-- Footer widgets with various links -->
+            <div class="footer-widgets">
+                 <div class="footer-widget-area">
+                    <h4>Sitemap</h4>
+                    <ul>
+                        <li><a href="#">Our Stories</a></li>
+                        <li><a href="#">Our Solutions</a></li>
+                        <li><a href="#">How it works</a></li>
+                        <li><a href="#">Case Studies</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Contact us</a></li>
+                    </ul>
+                </div>
+                 <div class="footer-widget-area">
+                    <h4>Our Story</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                         <li><a href="#">Healthy Snacks</a></li>
+                         <li><a href="#">Sustainability</a></li>
+                         <li><a href="https://shop.snackproud.com.au/pages/faqs" target="_blank" rel="noopener noreferrer">FAQs</a></li>
+                    </ul>
+                </div>
+                 <div class="footer-widget-area">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="https://snackproud.dearportal.com/" target="_blank" rel="noopener noreferrer">Trade Portal</a></li>
+                         <li><a href="https://shop.snackproud.com.au/" target="_blank" rel="noopener noreferrer">Shop Online</a></li>
+                         <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-widget-area google-map-container">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3310.160135898894!2d151.1390729763378!3d-33.9372832224164!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6b12b0f1a2b3c3d9%3A0x85c18b21183218f0!2s13%2F9%20Bermill%20St%2C%20Rockdale%20NSW%202216!5e0!3m2!1sen!2sau!4v1700000000000!5m2!1sen!2sau" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <div class="footer-widget-area">
+                    <h4>Snack Proud</h4>
+                    <p>
+                        <strong>Address:</strong><br>
+                        Unit 13/9 Bermill St, Rockdale NSW 2216
+                    </p>
+                    <p><strong>Phone:</strong> <a href="tel:1300445666" style="color:#ccc;">1300 445 666</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:orders@snackproud.com.au" style="color:#ccc;">orders@snackproud.com.au</a></p>
+                </div>
+            </div>
+        </div>
+        <div class="site-info-wrapper">
+            <div class="container">
+                <div class="site-info">
+                    &copy; <span id="current-year"></span> Snack Proud Pty Ltd. All Rights Reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+<script src="js/script.js" defer></script>
+</body>
+</html>
+
